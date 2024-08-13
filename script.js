@@ -1,122 +1,111 @@
-let blockSize = 25;
-let total_row = 17; //total row number
-let total_col = 17; //total column number
-let board;
-let context;
-
-let snakeX = blockSize * 5;
-let snakeY = blockSize * 5;
-
-// Set the total number of rows and columns
-let speedX = 0; //speed of snake in x coordinate.
-let speedY = 0; //speed of snake in Y coordinate.
-
-let snakeBody = [];
-
-let foodX;
-let foodY;
-
-let gameOver = false;
-
-window.onload = function () {
-	// Set board height and width
-	board = document.getElementById("board");
-	board.height = total_row * blockSize;
-	board.width = total_col * blockSize;
-	context = board.getContext("2d");
-
-	placeFood();
-	document.addEventListener("keyup", changeDirection); //for movements
-	// Set snake speed
-	setInterval(update, 1000 / 10);
-}
-
-function update() {
-	if (gameOver) {
-		return;
-	}
-
-	// Background of a Game
-	context.fillStyle = "green";
-	context.fillRect(0, 0, board.width, board.height);
-
-	// Set food color and position
-	context.fillStyle = "yellow";
-	context.fillRect(foodX, foodY, blockSize, blockSize);
-
-	if (snakeX == foodX && snakeY == foodY) {
-		snakeBody.push([foodX, foodY]);
-		placeFood();
-	}
-
-	// body of snake will grow
-	for (let i = snakeBody.length - 1; i > 0; i--) {
-		// it will store previous part of snake to the current part
-		snakeBody[i] = snakeBody[i - 1];
-	}
-	if (snakeBody.length) {
-		snakeBody[0] = [snakeX, snakeY];
-	}
-
-	context.fillStyle = "white";
-	snakeX += speedX * blockSize; //updating Snake position in X coordinate.
-	snakeY += speedY * blockSize; //updating Snake position in Y coordinate.
-	context.fillRect(snakeX, snakeY, blockSize, blockSize);
-	for (let i = 0; i < snakeBody.length; i++) {
-		context.fillRect(snakeBody[i][0], snakeBody[i][1], blockSize, blockSize);
-	}
-
-	if (snakeX < 0 
-		|| snakeX > total_col * blockSize 
-		|| snakeY < 0 
-		|| snakeY > total_row * blockSize) { 
-		
-		// Out of bound condition
-		gameOver = true;
-		alert("Game Over");
-	}
-
-	for (let i = 0; i < snakeBody.length; i++) {
-		if (snakeX == snakeBody[i][0] && snakeY == snakeBody[i][1]) { 
-			
-			// Snake eats own body
-			gameOver = true;
-			alert("Game Over");
-		}
-	}
-}
-
-// Movement of the Snake - We are using addEventListener
-function changeDirection(e) {
-	if (e.code == "ArrowUp" && speedY != 1) { 
-		// If up arrow key pressed with this condition...
-		// snake will not move in the opposite direction
-		speedX = 0;
-		speedY = -1;
-	}
-	else if (e.code == "ArrowDown" && speedY != -1) {
-		//If down arrow key pressed
-		speedX = 0;
-		speedY = 1;
-	}
-	else if (e.code == "ArrowLeft" && speedX != 1) {
-		//If left arrow key pressed
-		speedX = -1;
-		speedY = 0;
-	}
-	else if (e.code == "ArrowRight" && speedX != -1) { 
-		//If Right arrow key pressed
-		speedX = 1;
-		speedY = 0;
-	}
-}
-
-// Randomly place food
-function placeFood() {
-
-	// in x coordinates.
-	foodX = Math.floor(Math.random() * total_col) * blockSize; 
-	
-	//in y coordinates.
-	foodY = Math.floor(Math.random() * total_row) * blockSize; 
-}
+function play_game() {
+    var level = 160; // Game level, by decreasing will speed up
+    var rect_w = 45; // Width
+    var rect_h = 30; // Height
+    var inc_score = 50; // Score
+    var snake_color = "#006699"; // Snake Color
+    var ctx; // Canvas attributes
+    var tn = []; // temp directions storage
+    var x_dir = [-1, 0, 1, 0]; // position adjustments
+    var y_dir = [0, -1, 0, 1]; // position adjustments
+    var queue = [];
+    var frog = 1; // default food
+    var map = [];
+    var MR = Math.random;
+    var X = (5 + MR() * (rect_w - 10)) | 0; // Calculate positions
+    var Y = (5 + MR() * (rect_h - 10)) | 0; // Calculate positions
+    var direction = (MR() * 3) | 0;
+    var interval = 0;
+    var score = 0;
+    var sum = 0,
+      easy = 0;
+    var i, dir;
+  
+    // getting play area
+    var c = document.getElementById("playArea");
+    ctx = c.getContext("2d");
+  
+    // Map positions
+    for (i = 0; i < rect_w; i++) {
+      map[i] = [];
+    }
+  
+    // random placement of snake food
+    function rand_frog() {
+      var x, y;
+      do {
+        x = (MR() * rect_w) | 0;
+        y = (MR() * rect_h) | 0;
+      } while (map[x][y]);
+      map[x][y] = 1;
+      ctx.fillStyle = snake_color;
+      ctx.strokeRect(x * 10 + 1, y * 10 + 1, 8, 8);
+    }
+  
+    // Default somewhere placement
+    rand_frog();
+  
+    function set_game_speed() {
+      if (easy) {
+        X = (X + rect_w) % rect_w;
+        Y = (Y + rect_h) % rect_h;
+      }
+      --inc_score;
+      if (tn.length) {
+        dir = tn.pop();
+        if (dir % 2 !== direction % 2) {
+          direction = dir;
+        }
+      }
+      if (
+        (easy || (0 <= X && 0 <= Y && X < rect_w && Y < rect_h)) &&
+        2 !== map[X][Y]
+      ) {
+        if (1 === map[X][Y]) {
+          score += Math.max(5, inc_score);
+          inc_score = 50;
+          rand_frog();
+          frog++;
+        }
+        ctx.fillRect(X * 10, Y * 10, 9, 9);
+        map[X][Y] = 2;
+        queue.unshift([X, Y]);
+        X += x_dir[direction];
+        Y += y_dir[direction];
+        if (frog < queue.length) {
+          dir = queue.pop();
+          map[dir[0]][dir[1]] = 0;
+          ctx.clearRect(dir[0] * 10, dir[1] * 10, 10, 10);
+        }
+      } else if (!tn.length) {
+        var msg_score = document.getElementById("msg");
+        msg_score.innerHTML =
+          "Thank you for playing game.<br /> Your Score : <b>" +
+          score +
+          "</b><br /><br /><input type='button' value='Play Again' onclick='window.location.reload();' />";
+        document.getElementById("playArea").style.display = "none";
+        window.clearInterval(interval);
+      }
+    }
+  
+    interval = window.setInterval(set_game_speed, level);
+    document.onkeydown = function (e) {
+      var code = e.keyCode - 37;
+      if (0 <= code && code < 4 && code !== tn[0]) {
+        tn.unshift(code);
+      } else if (code == -5) {
+        if (interval) {
+          window.clearInterval(interval);
+          interval = 0;
+        } else {
+          interval = window.setInterval(set_game_speed, 60);
+        }
+      } else {
+        dir = sum + code;
+        if (dir == 44 || dir == 94 || dir == 126 || dir == 171) {
+          sum += code;
+        } else if (dir === 218) easy = 1;
+      }
+    };
+  }
+  
